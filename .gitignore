@@ -11,4 +11,5 @@ backend/.env
 web/.vscode
 web/node_modules
 web/.env
-web/yarn.lock
+web/yarn.lock.*
+*~
