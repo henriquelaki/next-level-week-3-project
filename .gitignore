@@ -1,0 +1,14 @@
+mobile/.expo
+mobile/.expo-shared
+mobile/yarn.lock
+mobile/yarn-error.log
+mobile/node_modules
+backend/.vscode
+backend/node_modules
+backend/yarn.lock
+backend/yarn-error.log
+backend/.env
+web/.vscode
+web/node_modules
+web/.env
+web/yarn.lock

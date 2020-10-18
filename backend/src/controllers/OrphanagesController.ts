@@ -1,0 +1,103 @@
+import { Request, Response } from "express"
+import { getRepository } from "typeorm"
+import Orphanage from "../models/Orphanage"
+import orphanageView from '../views/orphanages_view'
+import * as Yup from 'yup'
+
+export default {
+
+    async index(request: Request, response: Response) {
+        const orphanagesRepository = getRepository(Orphanage)
+
+        const orphanages = await  orphanagesRepository.find({
+            relations: ['images']
+        })
+
+        return response.status(200).json(orphanageView.renderMany(orphanages))
+
+    },
+
+    async remove(request: Request, response: Response) {
+        const { id } = request.params
+        const orphanagesRepository = getRepository(Orphanage)
+
+        const orphanage = await  orphanagesRepository.findOne(id)
+
+        if (orphanage) {
+            await orphanagesRepository.delete(orphanage)
+            return response.status(200).json({ message: `Orphanage with id ${id} removed`})
+        }
+        return response.status(204).json({ message: `Orphanage with id ${id} not found`})
+
+    },
+
+    async show(request: Request, response: Response) {
+
+        const { id } = request.params
+        const orphanagesRepository = getRepository(Orphanage)
+
+        const orphanage = await  orphanagesRepository.findOneOrFail(id, {
+            relations: ['images']
+        })
+
+        return response.status(200).json(orphanageView.render(orphanage))
+
+    },
+
+    async create(request: Request, response: Response) {
+        const {
+            name,
+            latitude,
+            longitude,
+            about,
+            instructions,
+            opening_hours,
+            open_on_weekends,
+            whatsapp_number
+        } = request.body
+
+	console.log(JSON.stringify(request.body))
+        const orphanagesRepository = getRepository(Orphanage)
+
+        const requestImages = request.files as Express.Multer.File[];
+        const images = requestImages.map(image => {
+            return { path: image.filename }
+        })
+
+        const data = {
+            name,
+            latitude,
+            longitude,
+            about,
+            instructions,
+            opening_hours,
+            open_on_weekends: open_on_weekends === 'true',
+            whatsapp_number,
+            images
+        }
+
+        const schema = Yup.object().shape({
+            name: Yup.string().required(),
+            latitude: Yup.number().required(),
+            longitude: Yup.number().required(),
+            about: Yup.string().required().max(300),
+            instructions: Yup.string().required(),
+            opening_hours: Yup.string().required(),
+            open_on_weekends: Yup.boolean().required(),
+            whatsapp_number: Yup.string().required().matches(/^\d+$/).min(10).max(11),
+            images: Yup.array(
+                Yup.object().shape({
+                    path:Yup.string().required()
+                 })
+            )
+        })
+
+
+        await schema.validate(data, {
+            abortEarly: false,
+        })
+        const orphanage = orphanagesRepository.create(data)
+        await orphanagesRepository.save(orphanage)
+        return response.status(201).json(orphanage)
+    }
+}
